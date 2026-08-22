@@ -1,0 +1,502 @@
+{
+  "info": {
+    "name": "LegacyVault Backend API",
+    "description": "Postman collection for testing the LegacyVault backend authentication, vault management, trust network, access requests, voting, and activity logging flows.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ownerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactEmail",
+      "value": "bob@example.com",
+      "type": "string"
+    },
+    {
+      "key": "vaultItemId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "requestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trustedContactId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"Secret123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"Secret123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Quorum Threshold",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quorum_threshold\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/quorum-threshold",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "quorum-threshold"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vault Items",
+      "item": [
+        {
+          "name": "Create Vault Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"password\",\n  \"title\": \"Gmail\",\n  \"content\": \"super-secret-password\",\n  \"is_always_visible\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vault-items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vault-items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Vault Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vault-items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vault-items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Shared Vault Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vault-items/shared/{{ownerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vault-items",
+                "shared",
+                "{{ownerId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Vault Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Gmail\",\n  \"content\": \"new-secret-value\",\n  \"is_always_visible\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vault-items/{{vaultItemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vault-items",
+                "{{vaultItemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Vault Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vault-items/{{vaultItemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vault-items",
+                "{{vaultItemId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trusted Contacts",
+      "item": [
+        {
+          "name": "Add Trusted Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact_email\": \"bob@example.com\",\n  \"relationship_label\": \"Brother\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/trusted-contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trusted-contacts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trusted Contacts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trusted-contacts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trusted-contacts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Trusted Contact",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trusted-contacts/{{trustedContactId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trusted-contacts",
+                "{{trustedContactId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Access Requests",
+      "item": [
+        {
+          "name": "Create Access Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_owner_id\": \"{{ownerId}}\",\n  \"reason\": \"I need emergency access to the vault.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/access-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "access-requests"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Incoming Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/access-requests/incoming",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "access-requests",
+                "incoming"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Requests To Vote",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/access-requests/to-vote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "access-requests",
+                "to-vote"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Votes",
+      "item": [
+        {
+          "name": "Cast Vote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"approve\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/votes/request/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "votes",
+                "request",
+                "{{requestId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Activity Logs",
+      "item": [
+        {
+          "name": "Get Activity Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity-logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity-logs"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
