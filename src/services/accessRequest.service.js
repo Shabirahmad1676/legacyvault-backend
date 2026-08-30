@@ -1,5 +1,5 @@
 const { AccessRequest, TrustedContact, ActivityLog, User, Vote } = require('../models');
-const AppError = require('../errors/AppError');
+const { ForbiddenError, ConflictError } = require('../errors/AppError');
 
 class AccessRequestService {
   static async expireStaleRequestsForOwner(owner_id) {
@@ -27,7 +27,7 @@ class AccessRequestService {
     });
 
     if (!trustLink) {
-      throw new AppError('You are not a trusted contact for this vault.', 403);
+      throw new ForbiddenError('You are not a trusted contact for this vault.');
     }
 
     const existingRequest = await AccessRequest.findOne({
@@ -35,7 +35,7 @@ class AccessRequestService {
     });
 
     if (existingRequest) {
-      throw new AppError('You already have a pending request for this vault.', 409);
+      throw new ConflictError('You already have a pending request for this vault.');
     }
 
     const expires_at = new Date();

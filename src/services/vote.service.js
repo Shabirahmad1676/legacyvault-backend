@@ -1,5 +1,5 @@
 const { Vote, AccessRequest, TrustedContact, User, ActivityLog } = require('../models');
-const AppError = require('../errors/AppError');
+const { AppError, NotFoundError, UnprocessableEntityError, BadRequestError, ForbiddenError, ConflictError } = require('../errors/AppError');
 
 class VoteService {
   static async castVote(voter_id, request_id, decision) {
@@ -10,14 +10,14 @@ class VoteService {
       }]
     });
 
-    if (!request) throw new AppError('Access request not found.', 404);
+    if (!request) throw new NotFoundError('Access request not found.');
 
     if (new Date(request.expires_at) < new Date()) {
       await request.update({ status: 'expired' });
-      throw new AppError('This access request has expired.', 410);
+      throw new UnprocessableEntityError('This access request has expired.');
     }
 
-    if (request.status !== 'pending') throw new AppError(`This request is already ${request.status}.`, 400);
+    if (request.status !== 'pending') throw new BadRequestError(`This request is already ${request.status}.`);
 
     const vault_owner = request.TrustedContact.vault_owner;
     const vault_owner_id = vault_owner.user_id;
@@ -26,13 +26,13 @@ class VoteService {
       where: { owner_id: vault_owner_id, contact_id: voter_id }
     });
 
-    if (!voterTrustLink) throw new AppError('You are not a trusted contact for this vault.', 403);
+    if (!voterTrustLink) throw new ForbiddenError('You are not a trusted contact for this vault.');
 
     const existingVote = await Vote.findOne({
       where: { request_id, trusted_contact_id: voterTrustLink.trust_link_id }
     });
 
-    if (existingVote) throw new AppError('You have already cast a vote for this request.', 409);
+    if (existingVote) throw new ConflictError('You have already cast a vote for this request.');
 
     const vote = await Vote.create({
       request_id,

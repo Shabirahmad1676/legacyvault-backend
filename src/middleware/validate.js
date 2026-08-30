@@ -1,4 +1,4 @@
-const AppError = require('../errors/AppError');
+const { BadRequestError } = require('../errors/AppError');
 
 const validate = (schema) => {
   return (req, res, next) => {
@@ -6,7 +6,7 @@ const validate = (schema) => {
 
     if (error) {
       const errorMessage = error.details.map((detail) => detail.message).join(', ');
-      return next(new AppError(errorMessage, 400));
+      return next(new BadRequestError(errorMessage));
     }
 
     next();

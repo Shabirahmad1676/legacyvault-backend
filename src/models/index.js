@@ -4,6 +4,7 @@ const TrustedContact = require('./TrustedContact');
 const VaultItem = require('./VaultItem');
 const AccessRequest = require('./AccessRequest');
 const Vote = require('./Vote');
+const Category = require('./Category');
 const ActivityLog = require('./ActivityLog');
 
 // 1. User <-> VaultItems
@@ -33,6 +34,9 @@ Vote.belongsTo(TrustedContact, { foreignKey: 'trusted_contact_id' });
 User.hasMany(ActivityLog, { foreignKey: 'vault_owner_id', onDelete: 'CASCADE' });
 ActivityLog.belongsTo(User, { foreignKey: 'vault_owner_id' });
 
+User.hasMany(Category, { foreignKey: 'owner_id', onDelete: 'CASCADE' });
+Category.belongsTo(User, { foreignKey: 'owner_id' });
+
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
@@ -52,5 +56,6 @@ module.exports = {
   VaultItem,
   AccessRequest,
   Vote,
+  Category,
   ActivityLog,
 };

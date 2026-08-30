@@ -9,7 +9,8 @@ class VoteController {
 
     const result = await VoteService.castVote(voter_id, request_id, decision);
 
-    res.status(201).json({ status: 'success', data: result });
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    res.status(HTTP_STATUSES.CREATED).json({ status: 'success', data: result });
   });
 
   static cast = this.castVote;

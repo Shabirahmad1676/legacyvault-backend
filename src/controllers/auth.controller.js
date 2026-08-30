@@ -3,10 +3,11 @@ const asyncHandler = require('../middleware/asyncHandler');
 
 class AuthController {
   static signup = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    const result = await AuthService.registerUser(email, password);
+    const { email, username, password } = req.body;
+    const result = await AuthService.registerUser(email, username, password);
 
-    return res.status(201).json({
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    return res.status(HTTP_STATUSES.CREATED).json({
       status: 'success',
       data: result,
     });
@@ -16,7 +17,8 @@ class AuthController {
     const { email, password } = req.body;
     const result = await AuthService.loginUser(email, password);
 
-    return res.status(200).json({
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    return res.status(HTTP_STATUSES.OK).json({
       status: 'success',
       data: result,
     });
@@ -26,14 +28,16 @@ class AuthController {
     const { quorum_threshold } = req.body;
     const result = await AuthService.updateQuorumThreshold(req.user.user_id, quorum_threshold);
 
-    return res.status(200).json({
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    return res.status(HTTP_STATUSES.OK).json({
       status: 'success',
       data: result,
     });
   });
 
   static logout = asyncHandler(async (req, res) => {
-    return res.status(200).json({
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    return res.status(HTTP_STATUSES.OK).json({
       status: 'success',
       message: 'Logged out successfully.',
     });

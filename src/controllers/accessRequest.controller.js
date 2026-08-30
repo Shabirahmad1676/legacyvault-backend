@@ -8,7 +8,8 @@ class AccessRequestController {
 
     const request = await AccessRequestService.createRequest(requester_id, target_owner_id, reason);
 
-    res.status(201).json({ status: 'success', data: request });
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    res.status(HTTP_STATUSES.CREATED).json({ status: 'success', data: request });
   });
 
   static getIncomingAccessRequests = asyncHandler(async (req, res) => {
@@ -16,12 +17,14 @@ class AccessRequestController {
 
     const requests = await AccessRequestService.getIncomingRequests(owner_id);
 
-    res.status(200).json({ status: 'success', data: requests });
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    res.status(HTTP_STATUSES.OK).json({ status: 'success', data: requests });
   });
 
   static getRequestsToVote = asyncHandler(async (req, res) => {
     const requests = await AccessRequestService.getRequestsForVoting(req.user.user_id);
-    res.status(200).json({ status: 'success', data: requests });
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    res.status(HTTP_STATUSES.OK).json({ status: 'success', data: requests });
   });
 }
 
