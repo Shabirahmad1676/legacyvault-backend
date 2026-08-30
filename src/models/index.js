@@ -43,7 +43,8 @@ const testConnection = async () => {
     console.log('✅ Database connection authenticated successfully.');
     return true;
   } catch (error) {
-    console.error('❌ Unable to connect to the database:', error.message);
+    console.error('❌ Unable to connect to the database:', error);
+    console.error(error.stack);
     throw error;
   }
 };
