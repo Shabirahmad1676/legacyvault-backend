@@ -1,5 +1,5 @@
 const { VaultItem, TrustedContact, AccessRequest } = require('../models');
-const AppError = require('../errors/AppError');
+const { BadRequestError, ForbiddenError } = require('../errors/AppError');
 
 class VaultItemService {
   static async createItem(owner_id, payload) {
@@ -22,7 +22,7 @@ class VaultItemService {
     });
 
     if (!trustLink) {
-      throw new AppError('You are not a trusted contact for this vault.', 403);
+      throw new ForbiddenError('You are not a trusted contact for this vault.');
     }
 
     const approvedRequest = await AccessRequest.findOne({
@@ -51,7 +51,8 @@ class VaultItemService {
     const item = await VaultItem.findOne({ where: { vault_item_id, owner_id } });
 
     if (!item) {
-      throw new AppError('Vault item not found or you do not have permission to edit it.', 404);
+      const { NotFoundError } = require('../errors/AppError');
+      throw new NotFoundError('Vault item not found or you do not have permission to edit it.');
     }
 
     return await item.update(payload);
@@ -61,7 +62,8 @@ class VaultItemService {
     const item = await VaultItem.findOne({ where: { vault_item_id, owner_id } });
 
     if (!item) {
-      throw new AppError('Vault item not found or you do not have permission to delete it.', 404);
+      const { NotFoundError } = require('../errors/AppError');
+      throw new NotFoundError('Vault item not found or you do not have permission to delete it.');
     }
 
     await item.destroy();

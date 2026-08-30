@@ -1,17 +1,17 @@
 const { TrustedContact, User } = require('../models');
-const AppError = require('../errors/AppError');
+const { NotFoundError, BadRequestError, ConflictError } = require('../errors/AppError');
 
 class TrustedContactService {
   static async addContact(owner_id, contact_email, relationship_label) {
     const contactUser = await User.findOne({ where: { email: contact_email } });
     if (!contactUser) {
-      throw new AppError('No user found with that email address.', 404);
+      throw new NotFoundError('No user found with that email address.');
     }
 
     const contact_id = contactUser.user_id;
 
     if (owner_id === contact_id) {
-      throw new AppError('You cannot add yourself as a trusted contact.', 400);
+      throw new BadRequestError('You cannot add yourself as a trusted contact.');
     }
 
     const existingLink = await TrustedContact.findOne({
@@ -19,7 +19,7 @@ class TrustedContactService {
     });
 
     if (existingLink) {
-      throw new AppError('This user is already a trusted contact.', 409);
+      throw new ConflictError('This user is already a trusted contact.');
     }
 
     return await TrustedContact.create({
@@ -46,7 +46,7 @@ class TrustedContactService {
     const link = await TrustedContact.findOne({ where: { trust_link_id, owner_id } });
 
     if (!link) {
-      throw new AppError('Trusted contact link not found.', 404);
+      throw new NotFoundError('Trusted contact link not found.');
     }
 
     await link.destroy();
