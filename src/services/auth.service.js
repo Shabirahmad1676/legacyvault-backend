@@ -10,22 +10,16 @@ const generateToken = (id) => {
 };
 
 class AuthService {
-  static async registerUser(email, username, password) {
+  static async registerUser(email, password) {
     const existingUserByEmail = await User.findOne({ where: { email } });
     if (existingUserByEmail) {
       throw new ConflictError('Email is already registered.');
-    }
-
-    const existingUserByUsername = await User.findOne({ where: { username } });
-    if (existingUserByUsername) {
-      throw new ConflictError('Username is already taken.');
     }
 
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
 
     const newUser = await User.create({
-      username,
       email,
       password_hash,
     });
@@ -35,7 +29,6 @@ class AuthService {
     return {
       user: {
         user_id: newUser.user_id,
-        username: newUser.username,
         email: newUser.email,
         quorum_threshold: newUser.quorum_threshold,
       },

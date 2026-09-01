@@ -16,7 +16,7 @@ app.use(express.json());
 app.use('/api', apiRouter);
 app.use(require('./src/middleware/errorHandler'));
 
-const startServer = async () => {
+const startServer = async (retries = 10, delay = 3000) => {
   try {
     await testConnection();
     await sequelize.sync({ alter: true });
@@ -26,8 +26,13 @@ const startServer = async () => {
       console.log(`🚀 LegacyVault Server running on http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error('❌ Database connection/sync failed:', error.message);
-    process.exit(1);
+    if (retries > 0) {
+      console.warn(`⚠️  Connection failed, retrying in ${delay / 1000}s... (${retries} attempts left)`);
+      setTimeout(() => startServer(retries - 1, delay), delay);
+    } else {
+      console.error('❌ Database connection/sync failed:', error.message);
+      process.exit(1);
+    }
   }
 };
 

@@ -3,8 +3,8 @@ const asyncHandler = require('../middleware/asyncHandler');
 
 class AuthController {
   static signup = asyncHandler(async (req, res) => {
-    const { email, username, password } = req.body;
-    const result = await AuthService.registerUser(email, username, password);
+    const { email, password } = req.body;
+    const result = await AuthService.registerUser(email, password);
 
     const HTTP_STATUSES = require('../enums/httpStatuses');
     return res.status(HTTP_STATUSES.CREATED).json({
