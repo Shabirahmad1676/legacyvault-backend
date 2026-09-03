@@ -1,10 +1,26 @@
 const Joi = require('joi');
 
 const signupSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(8).required().messages({
-    'string.min': 'Password must be at least 8 characters long.'
-  })
+  username: Joi.string()
+    .min(3)
+    .max(30)
+    .required()
+    .messages({
+      'string.min': 'Username must be at least 3 characters.',
+      'string.max': 'Username cannot exceed 30 characters.',
+      'any.required': 'Username is required.',
+    }),
+
+  email: Joi.string()
+    .email()
+    .required(),
+
+  password: Joi.string()
+    .min(8)
+    .required()
+    .messages({
+      'string.min': 'Password must be at least 8 characters long.',
+    }),
 });
 
 const loginSchema = Joi.object({
@@ -16,8 +32,29 @@ const quorumThresholdSchema = Joi.object({
   quorum_threshold: Joi.number().integer().min(1).required()
 });
 
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string()
+    .email()
+    .required(),
+});
+
+const resetPasswordSchema = Joi.object({
+  token: Joi.string()
+    .required(),
+
+  password: Joi.string()
+    .min(8)
+    .required()
+    .messages({
+      "string.min":
+        "Password must be at least 8 characters long.",
+    }),
+});
+
 module.exports = {
   signupSchema,
   loginSchema,
-  quorumThresholdSchema
+  quorumThresholdSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema
 };

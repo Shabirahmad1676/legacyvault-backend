@@ -78,55 +78,101 @@ class AccessRequestService {
   }
 
   static async getRequestsForVoting(user_id) {
-    const userTrusts = await TrustedContact.findAll({ where: { contact_id: user_id } });
-    const trustIds = userTrusts.map((link) => link.trust_link_id);
+  // Find vault owners where the current user is a trusted contact
+  const userTrusts = await TrustedContact.findAll({
+    where: {
+      contact_id: user_id,
+    },
+    attributes: ['owner_id'],
+  });
 
-    if (!trustIds.length) {
-      return [];
-    }
+  const ownerIds = userTrusts.map((link) => link.owner_id);
 
-    const requests = await AccessRequest.findAll({
-      where: { trusted_contact_id: trustIds, status: 'pending' },
-      include: [
-        {
-          model: TrustedContact,
-          include: [{ model: User, as: 'vault_owner', attributes: ['user_id', 'email'] }]
-        },
-        {
-          model: Vote,
-          include: [{
-            model: TrustedContact,
-            include: [{ model: User, as: 'delegate', attributes: ['user_id', 'email'] }]
-          }]
-        }
-      ],
-      order: [['created_at', 'DESC']]
-    });
-
-    for (const request of requests) {
-      if (new Date(request.expires_at) < new Date()) {
-        await request.update({ status: 'expired' });
-      }
-    }
-
-    return AccessRequest.findAll({
-      where: { trusted_contact_id: trustIds, status: 'pending' },
-      include: [
-        {
-          model: TrustedContact,
-          include: [{ model: User, as: 'vault_owner', attributes: ['user_id', 'email'] }]
-        },
-        {
-          model: Vote,
-          include: [{
-            model: TrustedContact,
-            include: [{ model: User, as: 'delegate', attributes: ['user_id', 'email'] }]
-          }]
-        }
-      ],
-      order: [['created_at', 'DESC']]
-    });
+  if (!ownerIds.length) {
+    return [];
   }
+
+  const requests = await AccessRequest.findAll({
+    where: {
+      status: 'pending',
+    },
+    include: [
+      {
+        model: TrustedContact,
+        where: {
+          owner_id: ownerIds,
+        },
+        include: [
+          {
+            model: User,
+            as: 'vault_owner',
+            attributes: [
+              'user_id',
+              'username',
+              'email',
+              'quorum_threshold',
+            ],
+          },
+          {
+            model: User,
+            as: 'delegate',
+            attributes: [
+              'user_id',
+              'username',
+              'email',
+            ],
+          },
+        ],
+      },
+      {
+        model: Vote,
+        include: [
+          {
+            model: TrustedContact,
+            include: [
+              {
+                model: User,
+                as: 'delegate',
+                attributes: [
+                  'user_id',
+                  'username',
+                  'email',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    order: [['created_at', 'DESC']],
+  });
+
+  const validRequests = [];
+  const now = new Date();
+
+  for (const request of requests) {
+    // Expire old requests
+    if (new Date(request.expires_at) < now) {
+      await request.update({
+        status: 'expired',
+      });
+
+      continue;
+    }
+
+    // Requester cannot vote on their own request
+    if (
+      request.TrustedContact &&
+      request.TrustedContact.contact_id === user_id
+    ) {
+      continue;
+    }
+
+    validRequests.push(request);
+  }
+
+  return validRequests;
+}
 }
 
 module.exports = AccessRequestService;

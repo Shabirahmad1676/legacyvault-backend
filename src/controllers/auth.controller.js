@@ -3,8 +3,13 @@ const asyncHandler = require('../middleware/asyncHandler');
 
 class AuthController {
   static signup = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    const result = await AuthService.registerUser(email, password);
+    const { username, email, password } = req.body;
+
+const result = await AuthService.registerUser(
+  username,
+  email,
+  password
+);
 
     const HTTP_STATUSES = require('../enums/httpStatuses');
     return res.status(HTTP_STATUSES.CREATED).json({
@@ -42,6 +47,39 @@ class AuthController {
       message: 'Logged out successfully.',
     });
   });
+
+  static forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const result =
+    await AuthService.forgotPassword(email);
+
+  const HTTP_STATUSES =
+    require("../enums/httpStatuses");
+
+  return res.status(HTTP_STATUSES.OK).json({
+    status: "success",
+    data: result,
+  });
+});
+
+static resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+
+  const result =
+    await AuthService.resetPassword(
+      token,
+      password
+    );
+
+  const HTTP_STATUSES =
+    require("../enums/httpStatuses");
+
+  return res.status(HTTP_STATUSES.OK).json({
+    status: "success",
+    data: result,
+  });
+});
 }
 
 module.exports = AuthController;

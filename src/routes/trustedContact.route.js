@@ -10,6 +10,7 @@ router.use(protect);
 
 router.post('/', validate(addContactSchema), TrustedContactController.addTrustedContact);
 router.get('/', TrustedContactController.getTrustedContacts);
+router.get('/assigned-vaults', TrustedContactController.getMyAssignedVaults);
 router.delete('/:id', TrustedContactController.removeTrustedContact);
 
 module.exports = router;

@@ -52,6 +52,19 @@ class TrustedContactService {
     await link.destroy();
     return { message: 'Trusted contact removed successfully. All associated requests and votes have been canceled.' };
   }
+
+  static async getVaultsImTrustedOn(contact_id) {
+    return await TrustedContact.findAll({
+      where: { contact_id },
+      include: [
+        {
+          model: User,
+          as: 'vault_owner',
+          attributes: ['user_id', 'email']
+        }
+      ]
+    });
+  }
 }
 
 module.exports = TrustedContactService;
