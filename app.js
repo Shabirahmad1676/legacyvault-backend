@@ -1,4 +1,3 @@
-// Load environment variables immediately before any other code
 require('dotenv').config(); 
 
 const express = require('express');
@@ -20,11 +19,13 @@ const startServer = async (retries = 10, delay = 3000) => {
   try {
     await testConnection();
     await sequelize.sync({ alter: true });
-    console.log('✅ PostgreSQL database tables synchronized.');
-
-    app.listen(PORT, () => {
-      console.log(`🚀 LegacyVault Server running on http://localhost:${PORT}`);
-    });
+    
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('✅ PostgreSQL database tables synchronized.');
+      app.listen(PORT, () => {
+        console.log(`🚀 LegacyVault Server running on http://localhost:${PORT}`);
+      });
+    }
   } catch (error) {
     if (retries > 0) {
       console.warn(`⚠️  Connection failed, retrying in ${delay / 1000}s... (${retries} attempts left)`);
@@ -37,3 +38,6 @@ const startServer = async (retries = 10, delay = 3000) => {
 };
 
 startServer();
+
+// Export the app for Supertest
+module.exports = app;

@@ -2,6 +2,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const { ConflictError, UnauthorizedError, BadRequestError, NotFoundError } = require('../errors/AppError');
+const crypto = require("crypto");
+const {
+  sendPasswordResetEmail,
+} = require("../utils/email");
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -10,30 +14,47 @@ const generateToken = (id) => {
 };
 
 class AuthService {
-  static async registerUser(email, password) {
-    const existingUserByEmail = await User.findOne({ where: { email } });
-    if (existingUserByEmail) {
-      throw new ConflictError('Email is already registered.');
-    }
+  static async registerUser(username, email, password) {
+    const existingUserByEmail = await User.findOne({
+  where: { email },
+});
 
-    const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(password, salt);
+if (existingUserByEmail) {
+  throw new ConflictError('Email is already registered.');
+}
 
-    const newUser = await User.create({
-      email,
-      password_hash,
-    });
+const existingUserByUsername = await User.findOne({
+  where: { username },
+});
 
-    const token = generateToken(newUser.user_id);
+if (existingUserByUsername) {
+  throw new ConflictError('Username is already taken.');
+}
 
-    return {
-      user: {
-        user_id: newUser.user_id,
-        email: newUser.email,
-        quorum_threshold: newUser.quorum_threshold,
-      },
-      token,
-    };
+const salt = await bcrypt.genSalt(10);
+
+const password_hash = await bcrypt.hash(
+  password,
+  salt
+);
+
+const newUser = await User.create({
+  username,
+  email,
+  password_hash,
+});
+
+const token = generateToken(newUser.user_id);
+
+return {
+  user: {
+    user_id: newUser.user_id,
+    username: newUser.username,
+    email: newUser.email,
+    quorum_threshold: newUser.quorum_threshold,
+  },
+  token,
+};
   }
 
   static async loginUser(email, password) {
@@ -77,6 +98,108 @@ class AuthService {
       quorum_threshold: user.quorum_threshold,
     };
   }
+
+  static async forgotPassword(email) {
+  const user = await User.findOne({
+    where: { email },
+  });
+
+  // Always return the same result even if email doesn't exist.
+  if (!user) {
+    return {
+      message:
+        "If an account exists for this email, a password reset link has been sent.",
+    };
+  }
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  const expiresAt = new Date(
+    Date.now() + 15 * 60 * 1000
+  );
+
+  await user.update({
+    reset_password_token_hash: tokenHash,
+    reset_password_expires_at: expiresAt,
+  });
+
+  const frontendUrl =
+    process.env.FRONTEND_URL || "http://localhost:3000";
+
+  const resetUrl =
+    `${frontendUrl}/reset-password?token=${resetToken}`;
+
+  await sendPasswordResetEmail(
+    user.email,
+    resetUrl
+  );
+
+  return {
+    message:
+      "If an account exists for this email, a password reset link has been sent.",
+  };
+}
+
+static async resetPassword(token, newPassword) {
+  if (!token) {
+    throw new BadRequestError(
+      "Password reset token is required."
+    );
+  }
+
+  const tokenHash = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  const user = await User.findOne({
+    where: {
+      reset_password_token_hash: tokenHash,
+    },
+  });
+
+  if (!user) {
+    throw new BadRequestError(
+      "Invalid or expired password reset link."
+    );
+  }
+
+  if (
+    !user.reset_password_expires_at ||
+    new Date(user.reset_password_expires_at) < new Date()
+  ) {
+    await user.update({
+      reset_password_token_hash: null,
+      reset_password_expires_at: null,
+    });
+
+    throw new BadRequestError(
+      "Invalid or expired password reset link."
+    );
+  }
+
+  const salt = await bcrypt.genSalt(10);
+
+  const password_hash = await bcrypt.hash(
+    newPassword,
+    salt
+  );
+
+  await user.update({
+    password_hash,
+    reset_password_token_hash: null,
+    reset_password_expires_at: null,
+  });
+
+  return {
+    message: "Password has been reset successfully.",
+  };
+}
 }
 
 module.exports = AuthService;

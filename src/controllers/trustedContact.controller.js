@@ -30,6 +30,13 @@ class TrustedContactController {
     res.status(HTTP_STATUSES.OK).json({ status: 'success', message: result.message });
   });
 
+  static getMyAssignedVaults = asyncHandler(async (req, res) => {
+    const contact_id = req.user.user_id;
+    const vaults = await TrustedContactService.getVaultsImTrustedOn(contact_id);
+    const HTTP_STATUSES = require('../enums/httpStatuses');
+    res.status(HTTP_STATUSES.OK).json({ status: 'success', data: vaults });
+  });
+
   static add = this.addTrustedContact;
   static getAll = this.getTrustedContacts;
   static remove = this.removeTrustedContact;

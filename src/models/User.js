@@ -27,6 +27,15 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  reset_password_token_hash: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+
+reset_password_expires_at: {
+  type: DataTypes.DATE,
+  allowNull: true,
+},
   quorum_threshold: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -35,7 +44,9 @@ const User = sequelize.define('User', {
       min: 1,
     }
   },
-}, {
+  
+}, 
+{
   tableName: 'users',
   timestamps: true, // Automatically adds created_at and updated_at
   createdAt: 'created_at',
