@@ -1,15 +1,20 @@
 const nodemailer = require("nodemailer");
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: process.env.SMTP_SECURE === "true",
+const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+const smtpPort = Number(process.env.SMTP_PORT || 587);
 
+console.log(`[DEBUG] Attempting SMTP connection to: ${smtpHost}:${smtpPort}`);
+
+const transporter = nodemailer.createTransport({
+  host: smtpHost,
+  port: smtpPort,
+  secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
+    user: process.env.SMTP_USER || "scienctist.shabir@gmail.com",
+    pass: process.env.SMTP_PASSWORD || "muqtszdgwbtptzad"  // Ensure this is your 16-character App Password
   },
 });
+
 
 async function sendPasswordResetEmail(email, resetUrl) {
   await transporter.sendMail({
