@@ -5,7 +5,7 @@ const { ConflictError, UnauthorizedError, BadRequestError, NotFoundError } = req
 const crypto = require("crypto");
 const {
   sendPasswordResetEmail,
-} = require("../utils/email");
+} = require("../utils/password-reset-email.util");
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {

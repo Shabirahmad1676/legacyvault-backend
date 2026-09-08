@@ -1,4 +1,4 @@
-const asyncHandler = require('../middleware/asyncHandler');
+const asyncHandler = require('../middleware/async-handler.middleware');
 const ActivityLogService = require('../services/activityLog.service');
 const HTTP_STATUSES = require('../enums/httpStatuses');
 

@@ -12,7 +12,7 @@ const {
 const {
   encrypt,
   decrypt,
-} = require('../utils/encryption');
+} = require('../utils/encryption.util');
 
 class VaultItemService {
 

@@ -1,10 +1,10 @@
 const sequelize = require('../config/database');
-const User = require('./User');
-const TrustedContact = require('./TrustedContact');
-const VaultItem = require('./VaultItem');
-const AccessRequest = require('./AccessRequest');
-const Vote = require('./Vote');
-const ActivityLog = require('./ActivityLog');
+const User = require('./user.model');
+const TrustedContact = require('./trusted-contact.model');
+const VaultItem = require('./vault-item.model');
+const AccessRequest = require('./access-request.model');
+const Vote = require('./vote.model');
+const ActivityLog = require('./activity-log.model');
 
 // 1. User <-> VaultItems
 User.hasMany(VaultItem, { foreignKey: 'owner_id', onDelete: 'CASCADE' });
@@ -17,7 +17,7 @@ TrustedContact.belongsTo(User, { foreignKey: 'owner_id', as: 'vault_owner' });
 User.hasMany(TrustedContact, { foreignKey: 'contact_id', as: 'assigned_trusts', onDelete: 'CASCADE' });
 TrustedContact.belongsTo(User, { foreignKey: 'contact_id', as: 'delegate' });
 
-// 3. TrustedContact <-> AccessRequests (The Magic Link)
+// 3. TrustedContact <-> AccessRequests
 TrustedContact.hasMany(AccessRequest, { foreignKey: 'trusted_contact_id', onDelete: 'CASCADE' });
 AccessRequest.belongsTo(TrustedContact, { foreignKey: 'trusted_contact_id' });
 
@@ -33,22 +33,8 @@ Vote.belongsTo(TrustedContact, { foreignKey: 'trusted_contact_id' });
 User.hasMany(ActivityLog, { foreignKey: 'vault_owner_id', onDelete: 'CASCADE' });
 ActivityLog.belongsTo(User, { foreignKey: 'vault_owner_id' });
 
-
-const testConnection = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Database connection authenticated successfully.');
-    return true;
-  } catch (error) {
-    console.error('❌ Unable to connect to the database:', error);
-    console.error(error.stack);
-    throw error;
-  }
-};
-
 module.exports = {
   sequelize,
-  testConnection,
   User,
   TrustedContact,
   VaultItem,
