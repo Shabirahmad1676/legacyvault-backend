@@ -1,10 +1,11 @@
-require('dotenv').config(); 
+require('dotenv').config(); // Absolute first line execution
 
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { sequelize, testConnection } = require('./src/models');
+const { sequelize } = require('./src/models');
 const apiRouter = require('./src/routes');
+const errorHandler = require('./src/middleware/error-handler.middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,16 +13,23 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
 app.use('/api', apiRouter);
-app.use(require('./src/middleware/errorHandler'));
+app.use(errorHandler);
 
 const startServer = async (retries = 10, delay = 3000) => {
   try {
-    await testConnection();
-    await sequelize.sync({ alter: true });
+    // 1. Authenticate connection directly via the instance
+    await sequelize.authenticate();
+    console.log('✅ Database connection authenticated successfully.');
+
+    // 2. Syncing tables (CTO Note: Swap this out for Migrations in production!)
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: true });
+      console.log('✅ PostgreSQL database tables synchronized.');
+    }
     
     if (process.env.NODE_ENV !== 'test') {
-      console.log('✅ PostgreSQL database tables synchronized.');
       app.listen(PORT, () => {
         console.log(`🚀 LegacyVault Server running on http://localhost:${PORT}`);
       });
@@ -31,7 +39,7 @@ const startServer = async (retries = 10, delay = 3000) => {
       console.warn(`⚠️  Connection failed, retrying in ${delay / 1000}s... (${retries} attempts left)`);
       setTimeout(() => startServer(retries - 1, delay), delay);
     } else {
-      console.error('❌ Database connection/sync failed:', error.message);
+      console.error('❌ Database connection/sync critical failure:', error.message);
       process.exit(1);
     }
   }
@@ -39,5 +47,4 @@ const startServer = async (retries = 10, delay = 3000) => {
 
 startServer();
 
-// Export the app for Supertest
 module.exports = app;

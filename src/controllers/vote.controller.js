@@ -1,5 +1,6 @@
 const VoteService = require('../services/vote.service');
-const asyncHandler = require('../middleware/asyncHandler');
+const asyncHandler = require('../middleware/async-handler.middleware');
+const HTTP_STATUSES = require('../enums/httpStatuses');
 
 class VoteController {
   static castVote = asyncHandler(async (req, res) => {
@@ -9,7 +10,7 @@ class VoteController {
 
     const result = await VoteService.castVote(voter_id, request_id, decision);
 
-    const HTTP_STATUSES = require('../enums/httpStatuses');
+    
     res.status(HTTP_STATUSES.CREATED).json({ status: 'success', data: result });
   });
 
