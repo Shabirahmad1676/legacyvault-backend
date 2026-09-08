@@ -1,12 +1,12 @@
 const VaultItemService = require('../services/vaultItem.service');
-const asyncHandler = require('../middleware/asyncHandler');
+const asyncHandler = require('../middleware/async-handler.middleware');
+const HTTP_STATUSES = require('../enums/httpStatuses');
 
 class VaultItemController {
   static createVaultItem = asyncHandler(async (req, res) => {
     const owner_id = req.user.user_id;
     const item = await VaultItemService.createItem(owner_id, req.body);
 
-    const HTTP_STATUSES = require('../enums/httpStatuses');
     res.status(HTTP_STATUSES.CREATED).json({ status: 'success', data: item });
   });
 
@@ -14,13 +14,11 @@ class VaultItemController {
     const owner_id = req.user.user_id;
     const items = await VaultItemService.getItemsByOwner(owner_id);
 
-    const HTTP_STATUSES = require('../enums/httpStatuses');
     res.status(HTTP_STATUSES.OK).json({ status: 'success', data: items });
   });
 
   static getSharedVaultItems = asyncHandler(async (req, res) => {
     const items = await VaultItemService.getSharedItems(req.user.user_id, req.params.owner_id);
-    const HTTP_STATUSES = require('../enums/httpStatuses');
     res.status(HTTP_STATUSES.OK).json({ status: 'success', data: items });
   });
 
@@ -30,7 +28,7 @@ class VaultItemController {
 
     const updatedItem = await VaultItemService.updateItem(owner_id, id, req.body);
 
-    const HTTP_STATUSES = require('../enums/httpStatuses');
+
     res.status(HTTP_STATUSES.OK).json({ status: 'success', data: updatedItem });
   });
 
@@ -40,7 +38,6 @@ class VaultItemController {
 
     await VaultItemService.deleteItem(owner_id, id);
 
-    const HTTP_STATUSES = require('../enums/httpStatuses');
     res.status(HTTP_STATUSES.OK).json({ status: 'success', message: 'Item deleted.' });
   });
 }
