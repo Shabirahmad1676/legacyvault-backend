@@ -139,27 +139,24 @@ class VoteService {
   });
 
   let newStatus = 'pending';
+  let accessExpiresAt = null;
 
   if (approveCount >= threshold) {
-    newStatus = 'approved';
-  } else if (denyCount > totalContacts - threshold) {
-    newStatus = 'rejected';
-  }
-
-  // -----------------------------------------
-  // UPDATE REQUEST STATUS
-  // -----------------------------------------
+      newStatus = 'approved';
+      accessExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24-hour temporary access window
+    } else if (denyCount > totalContacts - threshold) {
+      newStatus = 'denied'; // Aligns with PRD & constants
+    }
 
   if (newStatus !== 'pending') {
-    await request.update({
-      status: newStatus,
-    });
-
-    await ActivityLog.create({
-      vault_owner_id,
-      event_description:
-        `Quorum reached! Access request status updated to: ${newStatus}.`,
-    });
+      await request.update({
+        status: newStatus,
+        ...(accessExpiresAt && { access_expires_at: accessExpiresAt }),
+      });
+      await ActivityLog.create({
+        vault_owner_id,
+        event_description: `Quorum reached! Access request status updated to: ${newStatus}.`,
+      });
   }
 
   return {

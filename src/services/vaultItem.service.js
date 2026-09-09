@@ -1,26 +1,14 @@
-const {
-  VaultItem,
-  TrustedContact,
-  AccessRequest,
-} = require('../models');
+const { VaultItem, TrustedContact, AccessRequest } = require("../models");
 
-const {
-  BadRequestError,
-  ForbiddenError,
-} = require('../errors/AppError');
+const { BadRequestError, ForbiddenError } = require("../errors/AppError");
 
-const {
-  encrypt,
-  decrypt,
-} = require('../utils/encryption.util');
+const { encrypt, decrypt } = require("../utils/encryption.util");
 
 class VaultItemService {
-
   // CREATE
   static async createItem(owner_id, payload) {
     const encryptedPayload = {
-      ...payload,
-      content: encrypt(payload.content),
+      ...payload, content: encrypt(payload.content),
     };
 
     return await VaultItem.create({
@@ -29,12 +17,11 @@ class VaultItemService {
     });
   }
 
-
   // GET OWNER'S VAULT
   static async getItemsByOwner(owner_id) {
     const items = await VaultItem.findAll({
       where: { owner_id },
-      order: [['created_at', 'DESC']],
+      order: [["created_at", "DESC"]],
     });
 
     return items.map((item) => {
@@ -46,10 +33,8 @@ class VaultItemService {
     });
   }
 
-
   // GET SHARED VAULT
   static async getSharedItems(requester_id, owner_id) {
-
     const trustLink = await TrustedContact.findOne({
       where: {
         owner_id,
@@ -58,9 +43,7 @@ class VaultItemService {
     });
 
     if (!trustLink) {
-      throw new ForbiddenError(
-        'You are not a trusted contact for this vault.'
-      );
+      throw new ForbiddenError("You are not a trusted contact for this vault.");
     }
 
     const approvedRequest = await AccessRequest.findOne({
@@ -68,19 +51,20 @@ class VaultItemService {
         trusted_contact_id: trustLink.trust_link_id,
         status: 'approved',
       },
+      order: [['created_at', 'DESC']],
     });
 
     const isUnlocked =
       approvedRequest &&
-      new Date(approvedRequest.expires_at) > new Date();
-
+      approvedRequest.access_expires_at &&
+      new Date(approvedRequest.access_expires_at) > new Date();
 
     let items;
 
     if (isUnlocked) {
       items = await VaultItem.findAll({
         where: { owner_id },
-        order: [['created_at', 'DESC']],
+        order: [["created_at", "DESC"]],
       });
     } else {
       items = await VaultItem.findAll({
@@ -88,10 +72,9 @@ class VaultItemService {
           owner_id,
           is_always_visible: true,
         },
-        order: [['created_at', 'DESC']],
+        order: [["created_at", "DESC"]],
       });
     }
-
 
     return items.map((item) => {
       const data = item.toJSON();
@@ -102,14 +85,8 @@ class VaultItemService {
     });
   }
 
-
   // UPDATE
-  static async updateItem(
-    owner_id,
-    vault_item_id,
-    payload
-  ) {
-
+  static async updateItem(owner_id, vault_item_id, payload) {
     const item = await VaultItem.findOne({
       where: {
         vault_item_id,
@@ -118,40 +95,27 @@ class VaultItemService {
     });
 
     if (!item) {
-      const { NotFoundError } = require('../errors/AppError');
+      const { NotFoundError } = require("../errors/AppError");
 
       throw new NotFoundError(
-        'Vault item not found or you do not have permission to edit it.'
+        "Vault item not found or you do not have permission to edit it.",
       );
     }
-
 
     const updatedPayload = {
       ...payload,
     };
 
-
     // Only encrypt content when content is being changed
-    if (
-      Object.prototype.hasOwnProperty.call(
-        payload,
-        'content'
-      )
-    ) {
+    if (Object.prototype.hasOwnProperty.call(payload, "content")) {
       updatedPayload.content = encrypt(payload.content);
     }
-
 
     return await item.update(updatedPayload);
   }
 
-
   // DELETE
-  static async deleteItem(
-    owner_id,
-    vault_item_id
-  ) {
-
+  static async deleteItem(owner_id, vault_item_id) {
     const item = await VaultItem.findOne({
       where: {
         vault_item_id,
@@ -160,18 +124,17 @@ class VaultItemService {
     });
 
     if (!item) {
-      const { NotFoundError } = require('../errors/AppError');
+      const { NotFoundError } = require("../errors/AppError");
 
       throw new NotFoundError(
-        'Vault item not found or you do not have permission to delete it.'
+        "Vault item not found or you do not have permission to delete it.",
       );
     }
-
 
     await item.destroy();
 
     return {
-      message: 'Vault item deleted successfully.',
+      message: "Vault item deleted successfully.",
     };
   }
 }
