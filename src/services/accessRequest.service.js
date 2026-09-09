@@ -5,7 +5,7 @@ class AccessRequestService {
   static async expireStaleRequestsForOwner(owner_id) {
     const pendingRequests = await AccessRequest.findAll({
       include: [{ model: TrustedContact, where: { owner_id } }],
-      where: { status: 'pending' }
+      where: { status: 'pending' },
     });
 
     const now = new Date();
@@ -15,7 +15,7 @@ class AccessRequestService {
         await request.update({ status: 'expired' });
         await ActivityLog.create({
           vault_owner_id: owner_id,
-          event_description: `Access request expired for request ${request.request_id}.`
+          event_description: `Access request expired for request ${request.request_id}.`,
         });
       }
     }
@@ -23,7 +23,7 @@ class AccessRequestService {
 
   static async createRequest(requester_id, target_owner_id, reason) {
     const trustLink = await TrustedContact.findOne({
-      where: { owner_id: target_owner_id, contact_id: requester_id }
+      where: { owner_id: target_owner_id, contact_id: requester_id },
     });
 
     if (!trustLink) {
@@ -31,7 +31,7 @@ class AccessRequestService {
     }
 
     const existingRequest = await AccessRequest.findOne({
-      where: { trusted_contact_id: trustLink.trust_link_id, status: 'pending' }
+      where: { trusted_contact_id: trustLink.trust_link_id, status: 'pending' },
     });
 
     if (existingRequest) {
@@ -44,100 +44,46 @@ class AccessRequestService {
     const request = await AccessRequest.create({
       trusted_contact_id: trustLink.trust_link_id,
       reason,
-      expires_at
+      expires_at,
     });
 
     const requester = await User.findByPk(requester_id);
     await ActivityLog.create({
       vault_owner_id: target_owner_id,
-      event_description: `${requester.email} requested emergency access. Reason: ${reason}`
+      event_description: `${requester.email} requested emergency access. Reason: ${reason}`,
     });
 
     return request;
   }
 
   static async getIncomingRequests(owner_id) {
-    await this.expireStaleRequestsForOwner(owner_id);
+  await this.expireStaleRequestsForOwner(owner_id);
 
-    return await AccessRequest.findAll({
-      include: [
-        {
-          model: TrustedContact,
-          where: { owner_id },
-          include: [
-            {
-              model: User,
-              as: 'delegate',
-              attributes: ['user_id', 'email']
-            }
-          ]
-        }
-      ],
-      order: [['created_at', 'DESC']]
-    });
-  }
-
-  static async getRequestsForVoting(user_id) {
-  // Find vault owners where the current user is a trusted contact
-  const userTrusts = await TrustedContact.findAll({
-    where: {
-      contact_id: user_id,
-    },
-    attributes: ['owner_id'],
-  });
-
-  const ownerIds = userTrusts.map((link) => link.owner_id);
-
-  if (!ownerIds.length) {
-    return [];
-  }
-
-  const requests = await AccessRequest.findAll({
-    where: {
-      status: 'pending',
-    },
+  return await AccessRequest.findAll({
     include: [
       {
         model: TrustedContact,
-        where: {
-          owner_id: ownerIds,
-        },
+        where: { owner_id },
         include: [
           {
             model: User,
-            as: 'vault_owner',
-            attributes: [
-              'user_id',
-              'username',
-              'email',
-              'quorum_threshold',
-            ],
-          },
-          {
-            model: User,
             as: 'delegate',
-            attributes: [
-              'user_id',
-              'username',
-              'email',
-            ],
+            attributes: ['user_id', 'username', 'email'],
           },
         ],
       },
       {
         model: Vote,
+        as: 'votes',
         include: [
           {
             model: TrustedContact,
+            as: 'voter_contact',
             include: [
               {
                 model: User,
                 as: 'delegate',
-                attributes: [
-                  'user_id',
-                  'username',
-                  'email',
-                ],
+                attributes: ['user_id', 'username', 'email'],
               },
             ],
           },
@@ -146,33 +92,102 @@ class AccessRequestService {
     ],
     order: [['created_at', 'DESC']],
   });
-
-  const validRequests = [];
-  const now = new Date();
-
-  for (const request of requests) {
-    // Expire old requests
-    if (new Date(request.expires_at) < now) {
-      await request.update({
-        status: 'expired',
-      });
-
-      continue;
-    }
-
-    // Requester cannot vote on their own request
-    if (
-      request.TrustedContact &&
-      request.TrustedContact.contact_id === user_id
-    ) {
-      continue;
-    }
-
-    validRequests.push(request);
-  }
-
-  return validRequests;
 }
+
+  static async getRequestsForVoting(user_id) {
+    const userTrusts = await TrustedContact.findAll({
+      where: {
+        contact_id: user_id,
+      },
+      attributes: ['owner_id'],
+    });
+
+    const ownerIds = userTrusts.map((link) => link.owner_id);
+
+    if (!ownerIds.length) {
+      return [];
+    }
+
+    const requests = await AccessRequest.findAll({
+      where: {
+        status: 'pending',
+      },
+      include: [
+        {
+          model: TrustedContact,
+          where: {
+            owner_id: ownerIds,
+          },
+          include: [
+            {
+              model: User,
+              as: 'vault_owner',
+              attributes: [
+                'user_id',
+                'username',
+                'email',
+                'quorum_threshold',
+              ],
+            },
+            {
+              model: User,
+              as: 'delegate',
+              attributes: [
+                'user_id',
+                'username',
+                'email',
+              ],
+            },
+          ],
+        },
+        {
+          model: Vote,
+          as: 'votes',
+          include: [
+            {
+              model: TrustedContact,
+              as: 'voter_contact',
+              include: [
+                {
+                  model: User,
+                  as: 'delegate',
+                  attributes: [
+                    'user_id',
+                    'username',
+                    'email',
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    const validRequests = [];
+    const now = new Date();
+
+    for (const request of requests) {
+      if (new Date(request.expires_at) < now) {
+        await request.update({
+          status: 'expired',
+        });
+        continue;
+      }
+
+      if (
+        request.TrustedContact &&
+        request.TrustedContact.contact_id === user_id
+      ) {
+        continue;
+      }
+
+      validRequests.push(request);
+    }
+
+    return validRequests;
+  }
 }
 
 module.exports = AccessRequestService;

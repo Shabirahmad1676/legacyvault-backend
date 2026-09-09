@@ -43,15 +43,25 @@ class TrustedContactService {
   }
 
   static async removeContact(owner_id, trust_link_id) {
-    const link = await TrustedContact.findOne({ where: { trust_link_id, owner_id } });
-
-    if (!link) {
-      throw new NotFoundError('Trusted contact link not found.');
-    }
-
-    await link.destroy();
-    return { message: 'Trusted contact removed successfully. All associated requests and votes have been canceled.' };
+  const link = await TrustedContact.findOne({ where: { trust_link_id, owner_id } });
+  if (!link) {
+    throw new NotFoundError('Trusted contact link not found.');
   }
+
+  // Cancel pending requests initiated by this trusted contact
+  await AccessRequest.update(
+    { status: 'expired' },
+    { where: { trusted_contact_id: trust_link_id, status: 'pending' } }
+  );
+
+  await ActivityLog.create({
+    vault_owner_id: owner_id,
+    event_description: `Trusted contact revoked. All pending requests and votes associated with them were canceled.`,
+  });
+
+  await link.destroy();
+  return { message: 'Trusted contact removed successfully. All associated requests and votes have been canceled.' };
+}
 
   static async getVaultsImTrustedOn(contact_id) {
     return await TrustedContact.findAll({
