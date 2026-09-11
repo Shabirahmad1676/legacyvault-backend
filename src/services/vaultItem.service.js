@@ -35,55 +35,54 @@ class VaultItemService {
 
   // GET SHARED VAULT
   static async getSharedItems(requester_id, owner_id) {
-    const trustLink = await TrustedContact.findOne({
-      where: {
-        owner_id,
-        contact_id: requester_id,
-      },
-    });
+  const trustLink = await TrustedContact.findOne({
+    where: {
+      owner_id,
+      contact_id: requester_id,
+    },
+  });
 
-    if (!trustLink) {
-      throw new ForbiddenError("You are not a trusted contact for this vault.");
-    }
-
-    const approvedRequest = await AccessRequest.findOne({
-      where: {
-        trusted_contact_id: trustLink.trust_link_id,
-        status: 'approved',
-      },
-      order: [['created_at', 'DESC']],
-    });
-
-    const isUnlocked =
-      approvedRequest &&
-      approvedRequest.access_expires_at &&
-      new Date(approvedRequest.access_expires_at) > new Date();
-
-    let items;
-
-    if (isUnlocked) {
-      items = await VaultItem.findAll({
-        where: { owner_id },
-        order: [["created_at", "DESC"]],
-      });
-    } else {
-      items = await VaultItem.findAll({
-        where: {
-          owner_id,
-          is_always_visible: true,
-        },
-        order: [["created_at", "DESC"]],
-      });
-    }
-
-    return items.map((item) => {
-      const data = item.toJSON();
-
-      data.content = decrypt(data.content);
-
-      return data;
-    });
+  if (!trustLink) {
+    throw new ForbiddenError(
+      "You are not a trusted contact for this vault."
+    );
   }
+
+  const approvedRequest = await AccessRequest.findOne({
+    where: {
+      trusted_contact_id: trustLink.trust_link_id,
+      status: "approved",
+    },
+    order: [["created_at", "DESC"]],
+  });
+
+  const isUnlocked =
+    approvedRequest &&
+    approvedRequest.access_expires_at &&
+    new Date(approvedRequest.access_expires_at) > new Date();
+
+  // ALWAYS return all vault items.
+  const items = await VaultItem.findAll({
+    where: { owner_id },
+    order: [["created_at", "DESC"]],
+  });
+
+  return items.map((item) => {
+    const data = item.toJSON();
+
+    const canRead = data.is_always_visible || isUnlocked;
+
+    if (canRead) {
+      data.content = decrypt(data.content);
+      data.is_locked = false;
+    } else {
+      data.content = null;
+      data.is_locked = true;
+    }
+
+    return data;
+  });
+}
 
   // UPDATE
   static async updateItem(owner_id, vault_item_id, payload) {
