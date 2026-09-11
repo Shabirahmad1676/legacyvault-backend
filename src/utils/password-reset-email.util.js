@@ -10,8 +10,8 @@ const transporter = nodemailer.createTransport({
   port: smtpPort,
   secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER || "scienctist.shabir@gmail.com",
-    pass: process.env.SMTP_PASSWORD || "muqtszdgwbtptzad"  // Ensure this is your 16-character App Password
+    user: process.env.SMTP_USER ,
+    pass: process.env.SMTP_PASSWORD ,  
   },
 });
 
