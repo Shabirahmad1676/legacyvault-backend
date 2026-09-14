@@ -1,10 +1,10 @@
 const express = require('express');
 const authRoutes = require('./auth.route');
-const vaultItemRoutes = require('./vaultItem.route');
-const trustedContactRoutes = require('./trustedContact.route');
-const accessRequestRoutes = require('./accessRequest.route');
+const vaultItemRoutes = require('./vault-item.route');
+const trustedContactRoutes = require('./trusted-contact.route');
+const accessRequestRoutes = require('./access-request.route');
 const voteRoutes = require('./vote.route');
-const activityLogRoutes = require('./activityLog.route');
+const activityLogRoutes = require('./activity-log.route');
 
 const router = express.Router();
 
