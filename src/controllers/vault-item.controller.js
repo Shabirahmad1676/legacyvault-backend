@@ -1,4 +1,4 @@
-const VaultItemService = require('../services/vaultItem.service');
+const VaultItemService = require('../services/vault-item.service');
 const asyncHandler = require('../middleware/async-handler.middleware');
 const HTTP_STATUSES = require('../enums/httpStatuses');
 

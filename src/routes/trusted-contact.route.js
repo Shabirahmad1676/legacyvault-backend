@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-const TrustedContactController = require('../controllers/trustedContact.controller');
+const TrustedContactController = require('../controllers/trusted-contact.controller');
 const validate = require('../middleware/validate.middleware');
 const { protect } = require('../middleware/auth.middleware');
-const { addContactSchema } = require('../schemas/trustedContact.schema');
+const { addContactSchema } = require('../schemas/trusted-contact.schema');
 
 router.use(protect);
 

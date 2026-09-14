@@ -1,4 +1,4 @@
-const AccessRequestService = require('../services/accessRequest.service');
+const AccessRequestService = require('../services/access-request.service');
 const asyncHandler = require('../middleware/async-handler.middleware');
 const HTTP_STATUSES = require('../enums/httpStatuses');
 

@@ -1,4 +1,4 @@
-const TrustedContactService = require('../services/trustedContact.service');
+const TrustedContactService = require('../services/trusted-contact.service');
 const asyncHandler = require('../middleware/async-handler.middleware');
 const HTTP_STATUSES = require('../enums/httpStatuses');
 

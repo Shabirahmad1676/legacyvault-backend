@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-const AccessRequestController = require('../controllers/accessRequest.controller');
+const AccessRequestController = require('../controllers/access-request.controller');
 const validate = require('../middleware/validate.middleware');
 const { protect } = require('../middleware/auth.middleware');
-const { createRequestSchema } = require('../schemas/accessRequest.schema');
+const { createRequestSchema } = require('../schemas/access-request.schema');
 
 router.use(protect);
 

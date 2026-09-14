@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const ActivityLogController = require('../controllers/activityLog.controller');
+const ActivityLogController = require('../controllers/activity-log.controller');
 const { protect } = require('../middleware/auth.middleware');
 
 router.use(protect);

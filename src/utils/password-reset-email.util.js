@@ -3,7 +3,7 @@ const nodemailer = require("nodemailer");
 const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
 const smtpPort = Number(process.env.SMTP_PORT || 587);
 
-console.log(`[DEBUG] Attempting SMTP connection to: ${smtpHost}:${smtpPort}`);
+// console.log(`[DEBUG] Attempting SMTP connection to: ${smtpHost}:${smtpPort}`);
 
 const transporter = nodemailer.createTransport({
   host: smtpHost,

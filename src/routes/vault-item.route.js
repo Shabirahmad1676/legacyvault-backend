@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-const VaultItemController = require('../controllers/vaultItem.controller');
+const VaultItemController = require('../controllers/vault-item.controller');
 const validate = require('../middleware/validate.middleware');
 const { protect } = require('../middleware/auth.middleware');
-const { createItemSchema, updateItemSchema } = require('../schemas/vaultItem.schema');
+const { createItemSchema, updateItemSchema } = require('../schemas/vault-item.schema');
 
 router.use(protect);
 
