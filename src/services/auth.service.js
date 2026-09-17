@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, TrustedContact } = require('../models');
 const { ConflictError, UnauthorizedError, BadRequestError, NotFoundError } = require('../errors/AppError');
 const crypto = require("crypto");
 const {
@@ -82,7 +82,6 @@ return {
   }
 
   static async updateQuorumThreshold(userId, quorum_threshold) {
-
     if (!Number.isInteger(quorum_threshold) || quorum_threshold < 1) {
       throw new BadRequestError('Threshold must be at least 1');
     }
@@ -90,6 +89,13 @@ return {
     const user = await User.findByPk(userId);
     if (!user) {
       throw new NotFoundError('User not found.');
+    }
+
+    const contactCount = await TrustedContact.count({ where: { owner_id: userId } });
+    if (contactCount > 0 && quorum_threshold > contactCount) {
+      throw new BadRequestError(
+        `Threshold cannot exceed the number of configured trusted contacts (${contactCount}).`
+      );
     }
 
     await user.update({ quorum_threshold });

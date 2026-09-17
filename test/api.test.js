@@ -91,13 +91,19 @@ describe('LegacyVault API Integration Suite', () => {
   });
 
   describe('3. Trusted Contacts Network', () => {
+    let contact2Token, contact2Id;
+
     beforeAll(async () => {
-      // Create a contact user and a stranger user
-      const cRes = await request(app).post('/api/auth/signup').send({ email: 'contact@test.com', password: 'pass' });
+      // Create contact 1 (Bob), contact 2 (Charlie), and a stranger user
+      const cRes = await request(app).post('/api/auth/signup').send({ username: 'contact1', email: 'contact@test.com', password: 'password123' });
       contactToken = cRes.body.data.token;
       contactId = cRes.body.data.user.user_id;
 
-      const sRes = await request(app).post('/api/auth/signup').send({ email: 'stranger@test.com', password: 'pass' });
+      const c2Res = await request(app).post('/api/auth/signup').send({ username: 'contact2', email: 'contact2@test.com', password: 'password123' });
+      contact2Token = c2Res.body.data.token;
+      contact2Id = c2Res.body.data.user.user_id;
+
+      const sRes = await request(app).post('/api/auth/signup').send({ username: 'stranger', email: 'stranger@test.com', password: 'password123' });
       strangerToken = sRes.body.data.token;
     });
 
@@ -110,14 +116,21 @@ describe('LegacyVault API Integration Suite', () => {
       expect(res.statusCode).toBe(400);
     });
 
-    test('Should add a trusted contact (Happy Path)', async () => {
-      const res = await request(app)
+    test('Should add trusted contacts (Happy Path)', async () => {
+      const res1 = await request(app)
         .post('/api/trusted-contacts')
         .set('Authorization', `Bearer ${ownerToken}`)
         .send({ contact_email: 'contact@test.com', relationship_label: 'Sibling' });
       
-      expect(res.statusCode).toBe(201);
-      trustLinkId = res.body.data.trust_link_id;
+      expect(res1.statusCode).toBe(201);
+      trustLinkId = res1.body.data.trust_link_id;
+
+      const res2 = await request(app)
+        .post('/api/trusted-contacts')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({ contact_email: 'contact2@test.com', relationship_label: 'Lawyer' });
+      
+      expect(res2.statusCode).toBe(201);
     });
 
     test('Should list assigned vaults for a contact (Happy Path)', async () => {
@@ -131,6 +144,13 @@ describe('LegacyVault API Integration Suite', () => {
   });
 
   describe('4. Emergency Access & Consensus Engine', () => {
+    let contact2Token;
+
+    beforeAll(async () => {
+      const c2Res = await request(app).post('/api/auth/login').send({ email: 'contact2@test.com', password: 'password123' });
+      contact2Token = c2Res.body.data.token;
+    });
+
     test('Should prevent stranger from requesting access (Edge Case)', async () => {
       const res = await request(app)
         .post('/api/access-requests')
@@ -151,6 +171,15 @@ describe('LegacyVault API Integration Suite', () => {
       requestId = res.body.data.request_id;
     });
 
+    test('Should retrieve outgoing requests for requester (Happy Path)', async () => {
+      const res = await request(app)
+        .get('/api/access-requests/outgoing')
+        .set('Authorization', `Bearer ${contactToken}`);
+      
+      expect(res.statusCode).toBe(200);
+      expect(res.body.data.some(r => r.request_id === requestId)).toBe(true);
+    });
+
     test('Should prevent duplicate pending requests (Edge Case)', async () => {
       const res = await request(app)
         .post('/api/access-requests')
@@ -160,26 +189,28 @@ describe('LegacyVault API Integration Suite', () => {
       expect(res.statusCode).toBe(409);
     });
 
-    test('Should retrieve pending request for voting (Happy Path)', async () => {
+    test('Should prevent requester from voting on their own request (Edge Case)', async () => {
+      const res = await request(app)
+        .post(`/api/votes/request/${requestId}`)
+        .set('Authorization', `Bearer ${contactToken}`)
+        .send({ decision: 'approve' });
+      
+      expect(res.statusCode).toBe(403);
+    });
+
+    test('Should allow eligible peer contact to retrieve pending request to vote (Happy Path)', async () => {
       const res = await request(app)
         .get('/api/access-requests/to-vote')
-        .set('Authorization', `Bearer ${contactToken}`);
+        .set('Authorization', `Bearer ${contact2Token}`);
       
       expect(res.statusCode).toBe(200);
       expect(res.body.data.some(r => r.request_id === requestId)).toBe(true);
     });
 
-    test('Should cast vote and calculate quorum (Happy Path)', async () => {
-      // Owner currently has threshold=2, but only 1 contact.
-      // Update threshold to 1 so the single vote triggers approval.
-      await request(app)
-        .put('/api/auth/quorum-threshold')
-        .set('Authorization', `Bearer ${ownerToken}`)
-        .send({ quorum_threshold: 1 });
-
+    test('Should cast vote and calculate quorum for approval (Happy Path)', async () => {
       const res = await request(app)
         .post(`/api/votes/request/${requestId}`)
-        .set('Authorization', `Bearer ${contactToken}`)
+        .set('Authorization', `Bearer ${contact2Token}`)
         .send({ decision: 'approve' });
       
       expect(res.statusCode).toBe(201);
@@ -192,12 +223,13 @@ describe('LegacyVault API Integration Suite', () => {
         .set('Authorization', `Bearer ${contactToken}`);
       
       expect(res.statusCode).toBe(200);
-      expect(res.body.data.length).toBeGreaterThan(0); // Should see the 'Bank Login' item
+      expect(res.body.data.length).toBeGreaterThan(0);
+      expect(res.body.data.some(item => item.content === 'user: admin, pass: 1234')).toBe(true);
     });
   });
 
   describe('5. Revocation & Cascading Deletes', () => {
-    test('Should remove trusted contact and cascade cleanup (Happy Path)', async () => {
+    test('Should remove trusted contact and cancel pending requests cleanly (Happy Path)', async () => {
       const res = await request(app)
         .delete(`/api/trusted-contacts/${trustLinkId}`)
         .set('Authorization', `Bearer ${ownerToken}`);

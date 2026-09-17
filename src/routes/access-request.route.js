@@ -11,5 +11,6 @@ router.use(protect);
 router.post('/', validate(createRequestSchema), AccessRequestController.createAccessRequest);
 router.get('/incoming', AccessRequestController.getIncomingAccessRequests);
 router.get('/to-vote', AccessRequestController.getRequestsToVote);
+router.get('/outgoing', AccessRequestController.getOutgoingAccessRequests);
 
 module.exports = router;
