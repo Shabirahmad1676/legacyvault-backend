@@ -6,31 +6,38 @@ class VoteService {
     const t = await sequelize.transaction();
 
     try {
+      // 1. Exclusively lock the AccessRequest record (avoids Postgres outer-join lock restrictions)
       const request = await AccessRequest.findByPk(request_id, {
         lock: t.LOCK.UPDATE,
         transaction: t,
-        include: [
-          {
-            model: TrustedContact,
-            include: [
-              {
-                model: User,
-                as: 'vault_owner',
-                attributes: ['user_id', 'username', 'email', 'quorum_threshold'],
-              },
-              {
-                model: User,
-                as: 'delegate',
-                attributes: ['user_id', 'username', 'email'],
-              },
-            ],
-          },
-        ],
       });
 
       if (!request) {
         throw new NotFoundError('Access request not found.');
       }
+
+      // 2. Fetch associated trust link and owner metadata cleanly within transaction
+      const trustedContact = await TrustedContact.findByPk(request.trusted_contact_id, {
+        transaction: t,
+        include: [
+          {
+            model: User,
+            as: 'vault_owner',
+            attributes: ['user_id', 'username', 'email', 'quorum_threshold'],
+          },
+          {
+            model: User,
+            as: 'delegate',
+            attributes: ['user_id', 'username', 'email'],
+          },
+        ],
+      });
+
+      if (!trustedContact) {
+        throw new NotFoundError('Associated trusted contact not found.');
+      }
+
+      request.TrustedContact = trustedContact;
 
       if (new Date(request.expires_at) < new Date()) {
         await request.update({ status: 'expired' }, { transaction: t });
