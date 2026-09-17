@@ -22,6 +22,11 @@ class AccessRequestController {
     const requests = await AccessRequestService.getRequestsForVoting(req.user.user_id);
     res.status(HTTP_STATUSES.OK).json({ status: 'success', data: requests });
   });
+
+  static getOutgoingAccessRequests = asyncHandler(async (req, res) => {
+    const requests = await AccessRequestService.getMyOutgoingRequests(req.user.user_id);
+    res.status(HTTP_STATUSES.OK).json({ status: 'success', data: requests });
+  });
 }
 
 module.exports = AccessRequestController;

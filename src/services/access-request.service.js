@@ -188,6 +188,58 @@ class AccessRequestService {
 
     return validRequests;
   }
+
+  static async getMyOutgoingRequests(user_id) {
+    const requests = await AccessRequest.findAll({
+      include: [
+        {
+          model: TrustedContact,
+          where: {
+            contact_id: user_id,
+          },
+          include: [
+            {
+              model: User,
+              as: 'vault_owner',
+              attributes: ['user_id', 'username', 'email', 'quorum_threshold'],
+            },
+            {
+              model: User,
+              as: 'delegate',
+              attributes: ['user_id', 'username', 'email'],
+            },
+          ],
+        },
+        {
+          model: Vote,
+          as: 'votes',
+          include: [
+            {
+              model: TrustedContact,
+              as: 'voter_contact',
+              include: [
+                {
+                  model: User,
+                  as: 'delegate',
+                  attributes: ['user_id', 'username', 'email'],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    const now = new Date();
+    for (const req of requests) {
+      if (req.status === 'pending' && new Date(req.expires_at) < now) {
+        await req.update({ status: 'expired' });
+      }
+    }
+
+    return requests;
+  }
 }
 
 module.exports = AccessRequestService;

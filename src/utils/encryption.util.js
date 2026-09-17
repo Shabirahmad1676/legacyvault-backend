@@ -2,14 +2,12 @@ const crypto = require("crypto");
 
 const ALGORITHM = "aes-256-gcm";
 
-const ENCRYPTION_KEY = Buffer.from(
-  process.env.VAULT_ENCRYPTION_KEY,
-  "hex"
-);
+const rawKey = (process.env.VAULT_ENCRYPTION_KEY);
+const ENCRYPTION_KEY = Buffer.from(rawKey, "hex");
 
 if (ENCRYPTION_KEY.length !== 32) {
   throw new Error(
-    "VAULT_ENCRYPTION_KEY must be exactly 32 bytes."
+    "VAULT_ENCRYPTION_KEY must be exactly 32 bytes (64 hex characters)."
   );
 }
 

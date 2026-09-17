@@ -1,48 +1,62 @@
-require('dotenv').config(); // Absolute first line execution
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { sequelize } = require('./src/models');
 const apiRouter = require('./src/routes');
 const errorHandler = require('./src/middleware/error-handler.middleware');
+const { globalLimiter } = require('./src/middleware/rate-limiter.middleware');
+const redisClient = require('./src/config/redis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(helmet());
-origin: (origin, callback) => {
-  // 1. Filter out undefined variables (like if .env is missing)
-  const allowedPatterns = [
-    /^http:\/\/localhost:[0-9]+$/,
-    /^http:\/\/127\.0\.0\.1:[0-9]+$/,
-    process.env.FRONTEND_URL
-  ].filter(Boolean); // Removes undefined, null, or empty strings
-  
-  // 2. Check if the origin matches any pattern
-  const isAllowed = !origin || allowedPatterns.some(pattern => 
-    pattern instanceof RegExp ? pattern.test(origin) : pattern === origin
-  );
+// Trust proxy for Docker / Nginx environments
+app.set('trust proxy', 1);
 
-  if (isAllowed) {
-    callback(null, true);
-  } else {
-    callback(new Error('Not allowed by CORS'));
-  }
-}
+app.use(helmet());
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowedPatterns = [
+      /^http:\/\/localhost:[0-9]+$/,
+      /^http:\/\/127\.0\.0\.1:[0-9]+$/,
+      process.env.FRONTEND_URL
+    ];
+    const isAllowed = !origin || allowedPatterns.some(pattern => 
+      typeof pattern === 'string' ? pattern === origin : pattern.test(origin)
+    );
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json());
+
+// Apply global rate limiter
+app.use('/api', globalLimiter);
 
 app.use('/api', apiRouter);
 app.use(errorHandler);
 
-const startServer = async (retries = 10, delay = 3000) => {
+// Database connection authentication only (No runtime sync!)
+const startServer = async () => {
   try {
-    // 1. Authenticate connection directly via the instance
     await sequelize.authenticate();
     console.log('✅ Database connection authenticated successfully.');
 
-    // 2. Runtime syncing removed. Tables are now managed explicitly via migrations.
+    // Ensure Redis is connected if available
+    try {
+      if (process.env.NODE_ENV !== 'test' && !redisClient.isOpen) {
+        await redisClient.connect();
+      }
+    } catch (redisErr) {
+      console.warn('⚠️ Redis not available at startup. Rate limiting fallback will be used.');
+    }
     
     if (process.env.NODE_ENV !== 'test') {
       app.listen(PORT, () => {
@@ -50,16 +64,10 @@ const startServer = async (retries = 10, delay = 3000) => {
       });
     }
   } catch (error) {
-    if (retries > 0) {
-      console.warn(`⚠️  Connection failed, retrying in ${delay / 1000}s... (${retries} attempts left)`);
-      setTimeout(() => startServer(retries - 1, delay), delay);
-    } else {
-      console.error('❌ Database connection critical failure:', error.message);
-      process.exit(1);
-    }
+    console.error('❌ Startup critical failure:', error.message);
+    process.exit(1);
   }
 };
 
 startServer();
-
 module.exports = app;
