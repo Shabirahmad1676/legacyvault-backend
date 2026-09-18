@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const { sequelize } = require('./src/models');
 const apiRouter = require('./src/routes');
 const errorHandler = require('./src/middleware/error-handler.middleware');
@@ -36,6 +38,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Apply global rate limiter
 app.use('/api', globalLimiter);
@@ -65,9 +68,11 @@ const startServer = async () => {
     }
   } catch (error) {
     console.error('❌ Startup critical failure:', error.message);
-    process.exit(1);
   }
 };
 
-startServer();
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
 module.exports = app;
