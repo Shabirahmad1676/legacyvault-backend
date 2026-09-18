@@ -45,6 +45,19 @@ module.exports = (sequelize) => {
           min: 1,
         },
       },
+      password_changed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      failed_login_attempts: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      locked_until: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       tableName: 'users',

@@ -24,6 +24,7 @@ const VaultItem = require('./vault-item.model')(sequelize);
 const AccessRequest = require('./access-request.model')(sequelize);
 const Vote = require('./vote.model')(sequelize);
 const ActivityLog = require('./activity-log.model')(sequelize);
+const RefreshToken = require('./refresh-token.model')(sequelize);
 
 User.hasMany(VaultItem, { foreignKey: 'owner_id', onDelete: 'CASCADE' });
 VaultItem.belongsTo(User, { foreignKey: 'owner_id', as: 'owner' });
@@ -46,6 +47,9 @@ Vote.belongsTo(TrustedContact, { foreignKey: 'trusted_contact_id', as: 'voter_co
 User.hasMany(ActivityLog, { foreignKey: 'vault_owner_id', onDelete: 'CASCADE' });
 ActivityLog.belongsTo(User, { foreignKey: 'vault_owner_id', as: 'vault_owner' });
 
+User.hasMany(RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+RefreshToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 module.exports = {
   sequelize,
   User,
@@ -54,4 +58,5 @@ module.exports = {
   AccessRequest,
   Vote,
   ActivityLog,
+  RefreshToken,
 };

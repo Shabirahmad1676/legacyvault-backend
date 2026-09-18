@@ -25,6 +25,13 @@ const protect = async (req, res, next) => {
       return next(new UnauthorizedError('The user belonging to this token no longer exists.'));
     }
 
+    if (currentUser.password_changed_at) {
+      const changedTimestamp = Math.floor(currentUser.password_changed_at.getTime() / 1000);
+      if (decoded.iat && decoded.iat < changedTimestamp) {
+        return next(new UnauthorizedError('User recently changed password. Please log in again.'));
+      }
+    }
+
     req.user = currentUser;
     next();
   } catch (error) {

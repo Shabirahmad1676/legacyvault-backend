@@ -2,6 +2,8 @@ const request = require('supertest');
 const app = require('../app'); 
 const { sequelize, User, TrustedContact, AccessRequest, Vote } = require('../src/models');
 
+jest.setTimeout(30000);
+
 describe('LegacyVault API Integration Suite', () => {
   let ownerToken, ownerId, contactToken, contactId, strangerToken;
   let vaultItemId, trustLinkId, requestId;

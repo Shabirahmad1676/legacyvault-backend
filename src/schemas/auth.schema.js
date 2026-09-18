@@ -4,11 +4,10 @@ const signupSchema = Joi.object({
   username: Joi.string()
     .min(3)
     .max(30)
-    .required()
+    .optional()
     .messages({
       'string.min': 'Username must be at least 3 characters.',
       'string.max': 'Username cannot exceed 30 characters.',
-      'any.required': 'Username is required.',
     }),
 
   email: Joi.string()

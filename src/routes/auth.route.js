@@ -11,8 +11,8 @@ const router = express.Router();
 
 router.post('/signup', authLimiter , validate(signupSchema), AuthController.signup);
 router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
-
-router.post('/logout', protect, AuthController.logout);
+router.post('/refresh', authLimiter, AuthController.refresh);
+router.post('/logout', AuthController.logout);
 router.put('/quorum-threshold', protect, validate(quorumThresholdSchema), AuthController.updateQuorumThreshold);
 router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), AuthController.forgotPassword);
 router.post('/reset-password', authLimiter, validate(resetPasswordSchema), AuthController.resetPassword);
