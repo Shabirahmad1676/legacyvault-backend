@@ -6,11 +6,13 @@ const validate = require('../middleware/validate.middleware');
 const { protect } = require('../middleware/auth.middleware');
 const { addContactSchema } = require('../schemas/trusted-contact.schema');
 
+const { validateUuidParams } = require('../middleware/authorize.middleware');
+
 router.use(protect);
 
 router.post('/', validate(addContactSchema), TrustedContactController.addTrustedContact);
 router.get('/', TrustedContactController.getTrustedContacts);
 router.get('/assigned-vaults', TrustedContactController.getMyAssignedVaults);
-router.delete('/:id', TrustedContactController.removeTrustedContact);
+router.delete('/:id', validateUuidParams('id'), TrustedContactController.removeTrustedContact);
 
 module.exports = router;

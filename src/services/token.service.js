@@ -162,10 +162,11 @@ class TokenService {
    */
   static getCookieOptions() {
     const isProduction = process.env.NODE_ENV === 'production';
+    const sameSiteSetting = process.env.COOKIE_SAME_SITE || (isProduction ? 'none' : 'lax');
     return {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'strict' : 'lax',
+      secure: isProduction ? true : false,
+      sameSite: sameSiteSetting,
       path: '/api/auth',
       maxAge: REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000,
     };

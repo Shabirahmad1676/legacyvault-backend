@@ -2,7 +2,7 @@ const express = require('express');
 const AuthController = require('../controllers/auth.controller');
 const validate = require('../middleware/validate.middleware');
 const { protect } = require('../middleware/auth.middleware');
-const { authLimiter } = require('../middleware/rate-limiter.middleware');
+const { authLimiter, passwordResetLimiter } = require('../middleware/rate-limiter.middleware');
 const { signupSchema, loginSchema, quorumThresholdSchema, forgotPasswordSchema,
   resetPasswordSchema, } = require('../schemas/auth.schema');
 
@@ -14,7 +14,7 @@ router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
 router.post('/refresh', authLimiter, AuthController.refresh);
 router.post('/logout', AuthController.logout);
 router.put('/quorum-threshold', protect, validate(quorumThresholdSchema), AuthController.updateQuorumThreshold);
-router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), AuthController.forgotPassword);
-router.post('/reset-password', authLimiter, validate(resetPasswordSchema), AuthController.resetPassword);
+router.post('/forgot-password', passwordResetLimiter, validate(forgotPasswordSchema), AuthController.forgotPassword);
+router.post('/reset-password', passwordResetLimiter, validate(resetPasswordSchema), AuthController.resetPassword);
 
 module.exports = router;
