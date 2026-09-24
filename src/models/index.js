@@ -1,22 +1,4 @@
-const { Sequelize } = require('sequelize');
-
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
-    },
-  }
-);
+const sequelize = require('../config/database');
 
 const User = require('./user.model')(sequelize);
 const TrustedContact = require('./trusted-contact.model')(sequelize);
@@ -46,6 +28,9 @@ Vote.belongsTo(TrustedContact, { foreignKey: 'trusted_contact_id', as: 'voter_co
 
 User.hasMany(ActivityLog, { foreignKey: 'vault_owner_id', onDelete: 'CASCADE' });
 ActivityLog.belongsTo(User, { foreignKey: 'vault_owner_id', as: 'vault_owner' });
+
+User.hasMany(ActivityLog, { foreignKey: 'actor_id', as: 'actions_performed' });
+ActivityLog.belongsTo(User, { foreignKey: 'actor_id', as: 'actor' });
 
 User.hasMany(RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 RefreshToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });

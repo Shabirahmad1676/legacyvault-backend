@@ -6,6 +6,7 @@ const { protect } = require('../middleware/auth.middleware');
 
 router.use(protect);
 
+router.get('/verify', ActivityLogController.verifyIntegrity);
 router.get('/', ActivityLogController.getLogs);
 
 module.exports = router;

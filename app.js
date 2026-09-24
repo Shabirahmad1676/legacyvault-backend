@@ -10,43 +10,78 @@ const { globalLimiter } = require('./src/middleware/rate-limiter.middleware');
 const redisClient = require('./src/config/redis');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
-// Trust proxy for Docker / Nginx environments
+// Trust reverse proxy (AWS ALB, Nginx, Render, Cloudflare, etc.)
 app.set('trust proxy', 1);
 
-app.use(helmet());
+// Security Headers via Helmet
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// CORS Configuration
+const rawOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim().replace(/\/$/, ''))
+  : [];
+
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedPatterns = [
-      /^http:\/\/localhost:[0-9]+$/,
-      /^http:\/\/127\.0\.0\.1:[0-9]+$/,
-      process.env.FRONTEND_URL
-    ];
-    const isAllowed = !origin || allowedPatterns.some(pattern => 
-      typeof pattern === 'string' ? pattern === origin : pattern.test(origin)
-    );
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow non-browser requests (curl, server-to-server, postman)
+    if (!origin) return callback(null, true);
+
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1):[0-9]+$/.test(origin);
+
+    if ((isDevelopment && isLocalhost) || rawOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie'],
 }));
 
 app.use(express.json());
 app.use(cookieParser());
 
+// Liveness / Health check endpoint (for AWS ALB, ECS, Docker, Render)
+app.get('/health', async (req, res) => {
+  let dbStatus = 'connected';
+  let redisStatus = redisClient.isOpen ? 'connected' : 'disconnected';
+
+  try {
+    await sequelize.authenticate();
+  } catch (err) {
+    dbStatus = 'disconnected';
+  }
+
+  const isHealthy = dbStatus === 'connected';
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'healthy' : 'degraded',
+    timestamp: new Date().toISOString(),
+    services: {
+      database: dbStatus,
+      redis: redisStatus,
+    },
+  });
+});
+
 // Apply global rate limiter
 app.use('/api', globalLimiter);
 
+// Mount main API router
 app.use('/api', apiRouter);
+
+// Centralized error handling
 app.use(errorHandler);
 
-// Database connection authentication only (No runtime sync!)
+let server;
+
+// Database connection authentication & Server startup
 const startServer = async () => {
   try {
     await sequelize.authenticate();
@@ -62,8 +97,8 @@ const startServer = async () => {
     }
     
     if (process.env.NODE_ENV !== 'test') {
-      app.listen(PORT, () => {
-        console.log(`🚀 LegacyVault Server running on http://localhost:${PORT}`);
+      server = app.listen(PORT, () => {
+        console.log(`🚀 LegacyVault Server running on port ${PORT}`);
       });
     }
   } catch (error) {
@@ -71,8 +106,33 @@ const startServer = async () => {
   }
 };
 
+// Graceful shutdown handling for zero-downtime deployments
+const gracefulShutdown = async (signal) => {
+  console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+  if (server) {
+    server.close(async () => {
+      console.log('🔒 HTTP server closed.');
+      try {
+        await sequelize.close();
+        console.log('🔒 Database connection pool closed.');
+        if (redisClient.isOpen) {
+          await redisClient.quit();
+          console.log('🔒 Redis connection closed.');
+        }
+      } catch (err) {
+        console.error('Error during cleanup:', err.message);
+      }
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+};
+
 if (process.env.NODE_ENV !== 'test') {
   startServer();
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 module.exports = app;

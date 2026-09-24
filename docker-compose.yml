@@ -43,6 +43,7 @@ services:
       - DB_PASSWORD=secret
       - DB_NAME=legacyvault
       - REDIS_URL=redis://redis:6379
+      - DB_SSL=false
     ports:
       - "5000:5000"
     depends_on:
