@@ -21,7 +21,6 @@ app.use(helmet({
 }));
 
 // CORS Configuration
-// CORS Configuration
 const rawOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL
       .split(',')
