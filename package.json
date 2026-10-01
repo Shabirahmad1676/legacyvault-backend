@@ -2,14 +2,14 @@
   "name": "legacyvault-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "dev": "nodemon app.js",
-    "start": "node app.js",
-    "test": "cross-env NODE_ENV=test jest --runInBand --forceExit",
-    "db:migrate": "sequelize-cli db:migrate",
-    "db:migrate:undo": "sequelize-cli db:migrate:undo"
-  },
+  "dev": "nodemon app.js",
+  "start": "npx sequelize-cli db:migrate && node app.js",
+  "test": "cross-env NODE_ENV=test jest --runInBand --forceExit",
+  "db:migrate": "sequelize-cli db:migrate",
+  "db:migrate:undo": "sequelize-cli db:migrate:undo"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
