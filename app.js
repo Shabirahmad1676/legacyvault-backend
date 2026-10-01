@@ -21,61 +21,40 @@ app.use(helmet({
 }));
 
 // CORS Configuration
-const rawOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL
-      .split(',')
-      .map(url => url.trim().replace(/\/$/, ''))
-      .filter(Boolean)
-  : [];
-
 console.log('🌐 Allowed CORS origins:', rawOrigins);
+
+const allowedOrigins = [
+  'https://legacyvault-frontend.vercel.app',
+];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests without an Origin header
-      // (Postman, curl, server-to-server, etc.)
+    origin: function (origin, callback) {
       if (!origin) {
         return callback(null, true);
       }
 
-      const isDevelopment = process.env.NODE_ENV !== 'production';
-
-      const isLocalhost =
-        /^https?:\/\/(localhost|127\.0\.0\.1):[0-9]+$/.test(origin);
-
-      if (
-        rawOrigins.includes(origin) ||
-        (isDevelopment && isLocalhost)
-      ) {
+      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      console.log('❌ CORS blocked:', origin);
-
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      console.log('CORS rejected:', origin);
+      return callback(null, false);
     },
 
     credentials: true,
 
-    methods: [
-      'GET',
-      'POST',
-      'PUT',
-      'PATCH',
-      'DELETE',
-      'OPTIONS',
-    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
     allowedHeaders: [
       'Content-Type',
       'Authorization',
       'X-Requested-With',
     ],
-
-    exposedHeaders: ['Set-Cookie'],
   })
 );
+
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());
