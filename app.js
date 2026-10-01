@@ -21,29 +21,62 @@ app.use(helmet({
 }));
 
 // CORS Configuration
-const rawOrigins = process.env.FRONTEND_URL 
-  ? process.env.FRONTEND_URL.split(',').map(url => url.trim().replace(/\/$/, ''))
+// CORS Configuration
+const rawOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL
+      .split(',')
+      .map(url => url.trim().replace(/\/$/, ''))
+      .filter(Boolean)
   : [];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow non-browser requests (curl, server-to-server, postman)
-    if (!origin) return callback(null, true);
+console.log('🌐 Allowed CORS origins:', rawOrigins);
 
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1):[0-9]+$/.test(origin);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests without an Origin header
+      // (Postman, curl, server-to-server, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
 
-    if ((isDevelopment && isLocalhost) || rawOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+      const isDevelopment = process.env.NODE_ENV !== 'production';
 
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Set-Cookie'],
-}));
+      const isLocalhost =
+        /^https?:\/\/(localhost|127\.0\.0\.1):[0-9]+$/.test(origin);
+
+      if (
+        rawOrigins.includes(origin) ||
+        (isDevelopment && isLocalhost)
+      ) {
+        return callback(null, true);
+      }
+
+      console.log('❌ CORS blocked:', origin);
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+
+    credentials: true,
+
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS',
+    ],
+
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+    ],
+
+    exposedHeaders: ['Set-Cookie'],
+  })
+);
 
 app.use(express.json());
 app.use(cookieParser());
