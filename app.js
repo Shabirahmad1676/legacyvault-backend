@@ -21,11 +21,12 @@ app.use(helmet({
 }));
 
 // CORS Configuration
-console.log('🌐 Allowed CORS origins:', rawOrigins);
 
 const allowedOrigins = [
   'https://legacyvault-frontend.vercel.app',
 ];
+
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
 
 app.use(
   cors({
