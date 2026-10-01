@@ -11,4 +11,4 @@ EXPOSE 5000
 ENV NODE_ENV=production
 
 # Run migrations on container boot, then start the server
-CMD ["sh", "-c", "npx sequelize-cli db:migrate && node app.js"]
+CMD  npx sequelize-cli db:migrate && node app.js
